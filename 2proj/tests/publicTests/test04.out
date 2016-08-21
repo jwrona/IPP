@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<functions dir="basic/subdir/subsubdir/">
+<function file="whitespace.h" name="debugPutc" varargs="no" rettype="extern void">
+<param number="1" type="const int" />
+<param number="2" type="const int" />
+</function>
+</functions>

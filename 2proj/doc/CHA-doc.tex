@@ -1,0 +1,127 @@
+%%%%%
+%Soubor: CHA-doc.tex
+%Datum: 19.4.2013
+%Autor: Jan Wrona, xwrona00@stud.fit.vutbr.cz
+%Projekt: Dokumentace k projektu 2 pro predmet IPP
+%%%%%
+
+\documentclass[a4paper, 10pt]{article}[19.04.2013]
+  \usepackage[czech]{babel}
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage[text={18cm, 25cm}, left=1.5cm, top=2cm]{geometry}
+
+  \fontfamily{times}
+
+\begin{document}
+\noindent
+Dokumentace úlohy CHA: C Header Analysis v Python3 do IPP 2012/2013\\
+Jméno a příjmení: Jan Wrona\\
+Login: xwrona00
+
+\subsection*{Hlavní tělo}
+Zde popisuji pohled na program jako celek, popis a vysvětlení jednotlivých tříd, metod
+a funkcí následuje.
+
+Při spuštění nejprve dojde na zpracování argumentů příkazové řádky. Následuje kontrola,
+zda zadaná vstupní cesta existuje. Pokud ano, následuje větvení programu na část, kdy
+je zadán konkrétní soubor a kdy je zadán adresář, případně je použit aktuální pracovní adresář.
+Pokud je zadán vstupní soubor, nekontroluje se jeho přípona a volá se funkce \texttt{parseFile},
+která zajišťuje potřebný parsing. Při zadaném adresáři je situace mírně odlišná, prochází se totiž
+všechny soubory v adresáři i všech jeho podadresářích a ty s příponou \texttt{.h} se dále
+zpracovávají stejným způsobem jako tomu bylo u zadaného souboru. Výstup funkce \texttt{parseFile}
+se ukládá do seznamu, jenž se předá funkci pro převod do XML. Volitelně se volá funkce pro
+odsazení vytvořeného XML. Výsledný textový řetězec se vypíše buď na standardní výstup
+(při nezadaném parametru \texttt{---output}) či do souboru.
+
+\subsection*{Popis tříd}
+\subsubsection*{{\bf HeaderFile}}
+Třída určená pro práci s celým souborem. Z názvu by mohlo plynout, že funkčnost se omezuje
+na hlavičkové soubory, ale není tomu tak. Při zadání konkrétního souboru parametrem
+\texttt{---input} je soubor zpracován bez ohledu na jeho příponu.
+
+Konstruktor je jediné
+místo, kde se pracuje se souborem, ostatní metody díky tomu mají celý obsah souboru 
+vždy dostupný v proměnné. Možnosti třídy jsou uzpůsobené potřebám v projektu, ale
+implementace i jiných operací nad hlavičkovými soubory je snadno realizovatelná.
+Ostatní metody pracují se souborem jako s celkem, odstraňují z něj pro další zpracování
+nepotřebné části nebo připravují soubor k dalšímu zpracování.
+
+Popis metod:
+\begin{description}
+  \item [\texttt{\_\_init\_\_}] Konstruktor. Vytváří se v něm instanční proměnná \texttt{file}, 
+  určená pro uložení obsahu souboru. Následně se invokuje dále popsaná metoda \texttt{read()}.
+  Kromě proměnné \texttt{self} (v rámci konvence je \texttt{self} vždy první argument metody, 
+  proto ji nadále nebudu zmiňovat) má konstruktor ještě argument \texttt{name}, tedy jméno
+  vstupního souboru s cestou.
+  \item [\texttt{read}] Překopíruje celý obsah souboru do instanční proměnné. V bloku
+  \texttt{try} otevře vstupní soubor (název je zadaný v argumentu) v módu pro čtení, zpracuje
+  a soubor uzavře. Pokud je během tohoto vyvolána výjimka \texttt{IOError}, došlo k chybě při
+  souborové operaci a program je ukončen s příslušným návratovým kódem.
+  \item [\texttt{strip}] Odstraní komentáře a deklarace maker. Implementace pomocí regulárních
+  výrazů a metody \texttt{re.sub()}, pomocí které nalezené komentáře nahrazuji jednou mezerou
+  (aby nedošlo ke spojení např. dvou identifikátorů při výskytu komentáře mezi nimi). Makra, 
+  jak jednořádková tak víceřádková, jsou odstraněna.
+  \item [\texttt{removeBracesContent}] Odstraní obsah složených závorek. Metoda prochází
+  soubor znak po znaku a kopíruje je do nového řetězce. Pokud narazí na levou závorku, 
+  inkrementuje počítadlo závorek, naopak pokud narazí na pravou závorku, počítadlo
+  dekrementuje. Znaky jsou kopírovány pouze pokud je počítadlo nulové, tudíž se "kurzor"
+  nachází vně všech složených závorek. Tímto je dosaženo odstranění jejich obsahu.
+  \item [\texttt{findAllFunc}] Najde všechny deklarace a definice funkcí. Realizována
+  pomocí regulárního výrazu a metody \texttt{re.findall()}, která najde všechny vzájemně
+  se nepřekrývající výskyty. Z důvodu možnosti výskytu znaku konce řádku v deklaraci funkce,
+  je nutné nastavit příznak \texttt{re.DOTALL}, který způsobí nestandardní chování znaku
+  hvězdička (pasuje i na znak konec řádku). Metoda vrací seznam takto nalezených funkcí,
+  přičemž každý prvek obsahuje dvojici: návratový typ + název funkce a seznam argumentů.
+  Například funkce \texttt{int f1(double arg1, int*)} by vytvořila dvojici
+  \texttt{('int f1', 'double arg1, int*')}.
+\end{description}
+
+\subsubsection*{{\bf Function}}
+Třída určená pro práci s jedou funkcí.
+
+Popis metod:
+\begin{description}
+  \item [\texttt{\_\_init\_\_}] Konstruktor. Vytváří potřebné instanční proměnné.
+  Při volání volání konstruktoru jsou vyžadovány dva argumenty a to \texttt{func},
+  který musí obsahovat dvojici zmiňovanou u metody \texttt{findAllFunc} a druhým
+  argumentem, \texttt{name}, by měl být název souboru, ve kterém byla funkce umístěna
+  (kvůli výslednému XML souboru).
+  \item [\texttt{parse}] Tato metoda pouze invokuje metody pro parsování funkce
+  a kontroluje jejich návratové typy.
+  \item [\texttt{parseRetVal}] Rozdělí řetězec na návratový typ a název funkce,
+  uloží je do příslušných proměnných. Děje se tak opět především pomocí regulárních
+  výrazů. Při zadaném parametru \texttt{---no-inline} proběhne kontrola, zda se v 
+  deklaraci toto slovo vyskytuje, a pokud ano, tak je funkce ze zpracování vyřazena.
+  \item [\texttt{parseArgs}] Rozdělí řetězec na jednotlivé argumenty - konkrétně
+  jejich datové typy a jména. Dále se zde kontroluje výskyt výpustky, pokud je nalezena
+  nastavuje se příznak, který se projeví ve výsledném XML. Metoda neumí správně zpracovat
+  argumenty zadané bez jména.
+\end{description}
+
+\subsection*{Popis funkcí}
+\subsubsection*{{\bf argumentParser}}
+Funkce obstarává zpracování argumentů předaných programu na příkazové řádce.
+Využívá možnosti modulu \texttt{argparse}. I přesto, že jsou možnosti tohoto
+modulu velice rozsáhlé, ne vždy plně vyhovoval. Například kvůli kontroly, zda se
+každý argument vyskytuje maximálně jednou byla vytvořena třída \texttt{MyAction},
+která je předávána jako parametr metodě \texttt{add\_argument()}, a tuto kontrolu
+zajišťuje. Už zpracované parametry jsou uloženy do proměnné jako datový
+typ slovník.
+
+\subsubsection*{{\bf parseFile}}
+Nalezne všechny deklarace a definice funkcí v souboru, vrátí seznam instancí
+třídy \texttt{Function}. Funkce využívá především dříve popsaných tříd
+\texttt{HeaderFile} a \texttt{Function}, které instanciuje a zasílá jim
+potřebné zprávy.
+
+\subsubsection*{{\bf generateXml}}
+Funkce vygeneruje textový řetězec obsahující výsledné XML. To je neformátované,
+ve formě čitelné především pro strojové zpracování. Je zde využito modulu
+\texttt{xml.etree.ElementTree}.
+
+\subsubsection*{{\bf prettifyXml}}
+Zpracuje vstupní string obsahující validní XML do čitelnější podoby.
+Výsledný string obsahuje odsazení o zadaný počet mezer. Využívá se modulu
+\texttt{xml.dom.minidom}. 
+\end{document}

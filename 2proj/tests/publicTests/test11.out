@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<functions dir="">
+    <function file="ext/FUN.h" name="func1" varargs="yes" rettype="int * (*    )(int)">
+        <param number="1" type="void (*     )(int)" />
+    </function>
+    <function file="ext/FUN.h" name="func2" varargs="no" rettype="int * (*           )(const int (*)[10])">
+        <param number="1" type="void ** (*) (int *, char **(*)(char *, char **))" />
+    </function>
+    <function file="ext/FUN.h" name="func3" varargs="no" rettype="extern tagResult *">
+        <param number="1" type="tagFile *const" />
+        <param number="2" type="tagFile *const" />
+    </function>
+</functions>

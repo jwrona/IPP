@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<functions dir="">
+<!-- Added Element(s) -->
+<function file="basic/trivial.h" name="getDirectiveNestLevel" varargs="no" rettype="unsigned int"/>
+</functions>

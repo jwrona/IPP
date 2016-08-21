@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><functions dir=""><function file="basic/more.h" name="f" varargs="no" rettype="void"><param number="1" type="int" /></function><function file="basic/more.h" name="h" varargs="no" rettype="void"><param number="1" type="int" /></function></functions>
