@@ -1,0 +1,111 @@
+%%%%%
+%Soubor: cst.tex
+%Datum: 12.3.2013
+%Autor: Jan Wrona, xwrona00@stud.fit.vutbr.cz
+%Projekt: Dokumentace k projektu 1 pro predmet IPP
+%%%%%
+
+\documentclass[a4paper, 10pt]{article}[12.03.2013]
+  \usepackage[czech]{babel}
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage[text={18cm, 25cm}, left=1.5cm, top=2cm]{geometry}
+
+  \fontfamily{times}
+
+\begin{document}
+\noindent
+Dokumentace úlohy CST: C Stats v Perl do IPP 2012/2013\\
+Jméno a příjmení: Jan Wrona\\
+Login: xwrona00
+
+\subsection*{Hlavní tělo}
+Hlavní část programu jsem umístil vně všechny subrutiny, to je možné díky tomu,
+že v perlu není povinná žádná hlavní funkce (subrutina) a kód se začne vykonávat
+(s výjimkami) od prvního řádku. Do této části jsem v prvé řadě umístil funkce
+\texttt{use} zajišťující import funkčnosti jiných modulů. Pro tento program jsem
+použil modul \texttt{Cwd} pro zjištění aktuálního pracovního adresáře a absolutní
+cesty určitého souboru, dále potom modul \texttt{common::sense}.
+Také se zde nacházejí deklarace proměnných, které jsou potřeba v rámci celého programu.
+Především to je pole klíčových slov (detailnější popis později), text nápovědy, výčet
+návratových kódů, file descriptory, pole výsledných hodnot a jiné. Z důvodu přehlednosti
+jsem funkční kód v této sekci maximálně omezil na základní větvení, zda je na vstupu
+soubor či adresář a sadu volání základních subrutin (zpracování parametrů, otevření
+souboru, požadovaná akce nad soubory, \dots) a jediné ukončení programu s návratovým kódem 0, 
+tedy úspěšné ukončení.
+
+\subsection*{Popis subrutin}
+Program budu popisovat v přibližně takovém pořadí, v jakém se vykonává. Začnu tedy
+subrutinou \texttt{makeParam()} - ta staví především na modulu \texttt{Getopt::Long}.
+Tento modul jsem náležitě nakonfiguroval, jeho defaultní nastavení požadavkům ze
+zadání nevyhovovalo. Použita je klíčová funkce modulu, \texttt{GetOptions()}, která
+na základě parametrů na příkazové řádce nastaví hodnoty svým parametrům. Nicméně
+i přes takto zjednodušenou práci jsem musel řešit řadu problémů, jako jsou zakázané
+kombinace některých přepínačů, vícenásobný výskyt parametrů, nutnost zadání
+povinných parametrů a podobně. Pokud jsou tyto kontroly úspěšné, je program schopný
+určit, jaká akce se bude dále vykonávat (co bude program počítat).
+
+Podle argumentu přepínače \texttt{---input} se rozpozná, zda se bude zpracovávat
+jeden vstupní soubor, či adresář. Pokud je tento přepínač nezadán, bude se pracovat
+s aktuálním adresářem. Samozřejmostí jsou testy na správné otevření souboru, doprovázené
+ukončením programu při jejich neúspěchu.
+
+Při zadaném konkrétním souboru je volána subrutina \texttt{doAction()}, která obsahuje
+jednoduchý switch (modul \texttt{Switch}), jehož funkce je zavolat subrutinu dle
+vstupního přepínače. Pokud je zadán adresář, nejprve dojde na volání subrutiny
+\texttt{goThroughDirs()}, která, jak název napovídá, projde zadanou adresářovou
+strukturu. Seznam podadresářů získá vestavěnou funkcí \texttt{glob()}, zanořování je řešeno
+rekurzí. Funkcí \texttt{glob()} je následně získán seznam souborů s příponami
+".c .h" a nad každým je zavolána dříve zmiňovaná subrutina \texttt{doAction()}.
+
+Konečně se dostávám k jádru programu, které tvoří subrutiny
+\texttt{count\{Keywords, Operators, Identifiers, Comments, Pattern\}()}. Ty všechny
+mají určité společné rysy popsáné následovně. Vstupní soubor je zpracován řádkově,
+je tedy snížená spotřeba paměti při velkých souborech. Dále je to způsob zpracování
+textu - odstraňováním nechtěných částí vstupního kódu (mohou to být makra, komentáře, 
+textové řetězce nebo znakové literály). Tento způsob se mi jevil jako nejjednodušší
+a tudíž nejefektivnější. Většina těchto operací je řešena za pomocí
+regulárních výrazů, ať už se substitucí či nikoliv. Všechny tyto subrutiny vracejí
+výsledný počet pro jeden soubor.
+
+Klíčová slova počítá subrutina \texttt{countKeywords()} a to velice jednoduchým
+způsobem. Nejprve jsou odstraněny nežádoucí části kódu - v tomto případě to jsou
+komentáře, makra, řetězce, znakové literály a prázdné řádky (pouze kvůli efektivitě).
+Klíčová slova jsem umístil do pole a pro každé z těchto slov postupně pro každý řádek
+použitím regulárního výrazu \texttt{\textbackslash b\$word\textbackslash b} tato
+slova počítám. Pro operátory existuje subrutina \texttt{countOperators()}, jejíž
+funkčnost je podobná - "odstraňuje" z kódu stejné nežádoucí části, jen k nim přidává
+tečky z desetinných čísel a tři tečky z deklarací funkcí, protože to nejsou operátory
+(ale používají stejný symbol jako přístup do struktury, což operátor je). Pole
+operátorů bylo nutné seřadit počínaje těmi s nejvíce znaky. Jinak by například
+operátor bitového posuvu mohl být počítán jako dva operátory \texttt{>}. Při takto
+seřazených operátorech dostávají prioritu ty "delší". Pro použití v regulárním
+výrazu bylo potřeba některé znaky opatřit zpětným lomítkem - řeší to vestavěná funkce
+\texttt{quotemeta}. Hledání a počítání identifikátorů (jak jinak než subrutinou
+\texttt{countIdentifiers()}) je opět řešeno odstraněním komentářů, maker, řetězců
+a literálů, navíc se k nim přidávají klíčová slova. Je tomu tak proto, že detekce
+identifikátorů by je započítala, což by byla chyba. Ze specifikace C99 je identifikátor
+posloupnost znaků začínajících velkým či malým písmenem nebo podtržítkem, následovaná
+libovolným počtem množiny těch znaků doplněné o dekadické číslice. Použil jsem
+následující regulární výraz:
+\texttt{\textbackslash b[\textunderscore a-zA-Z][\textunderscore a-zA-Z0-9]*\textbackslash b}.
+Znaky v komentářích počítá subrutina \texttt{countCommnets()}, ať už jde o víceřádkové
+či jednořádkové komentáře. Ze zadání plyne, že konec řádku se počítá jako jeden znak, 
+i když je značen \texttt{CRLF}. Pro jednoduchost veškeré \texttt{CRLF} nahrazuji
+\texttt{LF}. Znaky jsou počítány vestavěnou funkcí \texttt{length()}, které jsou
+argumentem substringy vytvořené regulárními výrazy. Důležitá je detekce počátku
+víceřádkového komentáře, od něhož se všechny znaky započítávají, dokud není detekován
+konec komentáře. Poslední z těchto subrutin, \texttt{countPattern()}, počítá počet
+výskytů zadaného textového řetězce. Pro případ, že by obsahoval znaky kolidující s
+kontrolními znaky regulárního výrazu jsem opětovně využil funkce \texttt{quotemeta()}.
+
+Předchozí subrutiny využivají pomocné rutiny \texttt{remove\{Comments, Macros, StrChar\}()},
+jejichž funkce je z názvu jasná. Všechny jsou implementovány s využitím regulárních výrazů a 
+očekávají jediný parametr a to text (řádek). Funkce odstraňující komentáře pracuje jak
+s jednořádkovými tak i s víceřádkovými komentářemi, \texttt{removeMacros()} zpracovává
+makra preprocesoru počínající operátorem \texttt{\#}, pokud je poslední znak makra zpětné
+lomítko, je za makro považován i následující řádek. Poslední z těchto subrutin, 
+\texttt{removeStrChar()}, ostraňuje textové řetězce, tedy veškerý obsah ohraničený
+znaky \texttt{"} včetně těchto znaků a znakove literály ohraničené znaky \texttt{'}
+také včetně.
+\end{document}
